@@ -1,7 +1,7 @@
 require('dotenv').config();
-const connectDB = require('../src/config/db');
-const User = require('../src/models/User');
-const Product = require('../src/models/Product');
+const connectDB = require('../config/db');
+const User = require('../models/User');
+const Product = require('../models/Product');
 
 const seed = async () => {
   try {
@@ -17,11 +17,15 @@ const seed = async () => {
       role: 'superadmin'
     });
 
-    const products = [
+    let products = [
       { name: 'T-Shirt', description: 'Comfortable cotton t-shirt', price: 19.99, countInStock: 100, category: 'Apparel', brand: 'Acme' },
       { name: 'Sneakers', description: 'Running sneakers', price: 79.99, countInStock: 50, category: 'Footwear', brand: 'Sprint' },
       { name: 'Coffee Mug', description: 'Ceramic mug', price: 9.5, countInStock: 200, category: 'Home', brand: 'Mornings' }
     ];
+
+    // add unique slugs to avoid duplicate-key if a unique index exists
+    const slugify = (s) => s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    products = products.map((p, i) => ({ ...p, slug: `${slugify(p.name)}-${Date.now()}-${i}` }));
 
     await Product.insertMany(products);
 
