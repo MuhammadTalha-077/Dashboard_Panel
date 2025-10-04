@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Backend Preview - Dashboard Panel</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--muted:#94a3b8;--accent:#06b6d4;--glass:rgba(255,255,255,0.03)}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial; background:linear-gradient(180deg,#071029 0%, #071a2b 100%);color:#e6eef6}
+    .wrap{max-width:980px;margin:48px auto;padding:24px}
+    header{display:flex;align-items:center;gap:16px}
+    h1{margin:0;font-size:24px}
+    .meta{color:var(--muted);font-size:14px}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px}
+    .card{background:var(--card);padding:18px;border-radius:12px;box-shadow:0 6px 20px rgba(2,6,23,0.6);min-height:96px}
+    .card h3{margin:0;font-size:12px;color:var(--muted)}
+    .card .v{font-size:20px;margin-top:8px}
+    pre{white-space:pre-wrap;color:var(--muted);font-size:13px}
+    .footer{margin-top:28px;color:var(--muted);font-size:13px}
+    .btn{display:inline-block;padding:8px 12px;border-radius:8px;background:var(--glass);color:var(--accent);text-decoration:none;margin-left:8px}
+    @media(max-width:800px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Backend Status Preview</h1>
+        <div class="meta">Visual health dashboard for the API — automatically refreshes</div>
+      </div>
+      <div style="margin-left:auto;text-align:right">
+        <div id="time" class="meta">—</div>
+        <a class="btn" href="/api/health" target="_blank">/api/health</a>
+        <a class="btn" href="/api/health/preview" target="_blank">/api/health/preview</a>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h3>API Status</h3>
+        <div id="api-status" class="v">—</div>
+        <pre id="api-msg"></pre>
+      </div>
+
+      <div class="card">
+        <h3>Database</h3>
+        <div id="db-status" class="v">—</div>
+        <pre id="db-msg"></pre>
+      </div>
+
+      <div class="card">
+        <h3>Counts</h3>
+        <div id="counts" class="v">—</div>
+        <pre id="counts-detail"></pre>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:12px">
+      <div class="card" style="grid-column:span 3">
+        <h3>Raw JSON</h3>
+        <pre id="raw" style="max-height:240px;overflow:auto">—</pre>
+      </div>
+    </div>
+
+    <div class="footer">Auto-refresh every 10s. Last updated: <span id="updated">—</span></div>
+  </div>
+
+  <script>
+    const api = '/api/health';
+    async function fetchStatus(){
+      try{
+        const res = await fetch(api, {cache:'no-store'});
+        const data = await res.json();
+        document.getElementById('time').textContent = data.time || new Date().toISOString();
+        document.getElementById('updated').textContent = new Date().toLocaleString();
+        document.getElementById('raw').textContent = JSON.stringify(data,null,2);
+        document.getElementById('api-status').textContent = data.ok ? 'OK' : 'ERROR';
+        document.getElementById('api-msg').textContent = data.node_env + ' • uptime ' + (data.uptime_seconds || '-') + 's';
+        document.getElementById('db-status').textContent = (data.db === 'ok' ? 'Connected' : data.db);
+        document.getElementById('db-msg').textContent = data.dbError || '';
+        if(data.counts){
+          document.getElementById('counts').textContent = `U:${data.counts.users || 0}  P:${data.counts.products || 0}  O:${data.counts.orders || 0}`;
+          document.getElementById('counts-detail').textContent = `Users: ${data.counts.users || 0}\nProducts: ${data.counts.products || 0}\nOrders: ${data.counts.orders || 0}`;
+        } else {
+          document.getElementById('counts').textContent = '-';
+          document.getElementById('counts-detail').textContent = '';
+        }
+      }catch(err){
+        document.getElementById('api-status').textContent = 'DOWN';
+        document.getElementById('raw').textContent = err.toString();
+      }
+    }
+    fetchStatus();
+    setInterval(fetchStatus,10000);
+  </script>
+</body>
+</html>
